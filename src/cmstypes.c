@@ -1548,8 +1548,6 @@ void *Type_MLU_Read(struct _cms_typehandler_struct* self, cmsIOHANDLER* io, cmsU
     if (SizeOfTag == 0)
     {
         Block = NULL;
-        NumOfWchar = 0;
-
     }
     else
     {
@@ -5221,11 +5219,13 @@ cmsBool WriteOneMLUC(struct _cms_typehandler_struct* self, cmsIOHANDLER* io,  _c
     }
 
     Before = io ->Tell(io);
-    e ->Offsets[i] = Before - BaseOffset;
+    if (e->Offsets != NULL)
+        e ->Offsets[i] = Before - BaseOffset;
 
     if (!Type_MLU_Write(self, io, (void*) mlu, 1)) return FALSE;
 
-    e ->Sizes[i] = io ->Tell(io) - Before;
+    if (e->Sizes != NULL)
+        e ->Sizes[i] = io ->Tell(io) - Before;
     return TRUE;
 }
 
