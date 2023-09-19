@@ -93,7 +93,7 @@ cmsBool RegisterTypesPlugin(cmsContext id, cmsPluginBase* Data, _cmsMemoryClient
     return TRUE;
 }
 
-// Return handler for a given type or NULL if not found. Shared between normal types and MPE. It first tries the additons 
+// Return handler for a given type or NULL if not found. Shared between normal types and MPE. It first tries the additions 
 // made by plug-ins and then the built-in defaults.
 static
 cmsTagTypeHandler* GetHandler(cmsTagTypeSignature sig, _cmsTagTypeLinkedList* PluginLinkedList, _cmsTagTypeLinkedList* DefaultLinkedList)
@@ -4450,7 +4450,7 @@ void *Type_MPEclut_Read(struct _cms_typehandler_struct* self, cmsIOHANDLER* io, 
     clut = (_cmsStageCLutData*) mpe ->Data;
     for (i=0; i < clut ->nEntries; i++) {
 
-        if (!_cmsReadFloat32Number(io, &clut->Tab.TFloat[i])) goto Error;       
+        if (!_cmsReadFloat32Number(io, &clut->Tab.TFloat[i])) goto Error;
     }
 
     *nItems = 1;
