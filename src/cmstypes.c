@@ -975,11 +975,18 @@ void *Type_Text_Description_Read(struct _cms_typehandler_struct* self, cmsIOHAND
     UnicodeString = (wchar_t*)_cmsMalloc(self->ContextID, (UnicodeCount + 1) * sizeof(wchar_t));
     if (UnicodeString == NULL) goto Done;
 
-    if (!_cmsReadWCharArray(io, UnicodeCount, UnicodeString)) goto Done;
+    if (!_cmsReadWCharArray(io, UnicodeCount, UnicodeString)) {
+        _cmsFree(self->ContextID, (void*)UnicodeString);
+        goto Done;
+    }
 
     UnicodeString[UnicodeCount] = 0;
 
-    if (!cmsMLUsetWide(mlu, cmsV2Unicode, cmsV2Unicode, UnicodeString)) goto Done;
+    if (!cmsMLUsetWide(mlu, cmsV2Unicode, cmsV2Unicode, UnicodeString)) {
+        _cmsFree(self->ContextID, (void*)UnicodeString);
+        goto Done;
+    }
+
     _cmsFree(self->ContextID, (void*)UnicodeString);
     UnicodeString = NULL;
 
@@ -1919,7 +1926,7 @@ Error:
 
 // We only allow a specific MPE structure: Matrix plus prelin, plus clut, plus post-lin.
 static
-cmsBool  Type_LUT8_Write(struct _cms_typehandler_struct* self, cmsIOHANDLER* io, void* Ptr, cmsUInt32Number nItems)
+cmsBool Type_LUT8_Write(struct _cms_typehandler_struct* self, cmsIOHANDLER* io, void* Ptr, cmsUInt32Number nItems)
 {
     cmsUInt32Number j, nTabSize, i;
     cmsUInt8Number  val;
@@ -1932,6 +1939,12 @@ cmsBool  Type_LUT8_Write(struct _cms_typehandler_struct* self, cmsIOHANDLER* io,
 
     // Disassemble the LUT into components.
     mpe = NewLUT -> Elements;
+
+    if (mpe == NULL) {  // Should never be empty. Corrupted?
+        cmsSignalError(self->ContextID, cmsERROR_UNKNOWN_EXTENSION, "empty LUT8 is not supported");
+        return FALSE;
+    }
+
     if (mpe ->Type == cmsSigMatrixElemType) {
 
         if (mpe->InputChannels != 3 || mpe->OutputChannels != 3) return FALSE;
