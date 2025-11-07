@@ -293,9 +293,11 @@ void FloatXFORM(_cmsTRANSFORM* p,
                 // Is current color out of gamut?
                 if (OutOfGamut > 0.0) {
 
+                    _cmsAlarmCodesChunkType* ContextAlarmCodes = (_cmsAlarmCodesChunkType*)_cmsContextGetClientChunk(p->ContextID, AlarmCodesContext);
+
                     // Certainly, out of gamut
                     for (c = 0; c < cmsMAXCHANNELS; c++)
-                        fOut[c] = -1.0;
+                        fOut[c] = ContextAlarmCodes->AlarmCodes[c] / 65535.0F;
 
                 }
                 else {
@@ -1069,6 +1071,8 @@ cmsBool  IsProperColorSpace(cmsColorSpaceSignature Check, cmsUInt32Number dwForm
 {
     int Space1 = (int) T_COLORSPACE(dwFormat);
     int Space2 = _cmsLCMScolorSpace(Check);
+
+    if (dwFormat == 0) return TRUE; // Bypass used by linkicc
 
     if (Space1 == PT_ANY) return (T_CHANNELS(dwFormat) == cmsChannelsOf(Check));
     if (Space1 == Space2) return TRUE;

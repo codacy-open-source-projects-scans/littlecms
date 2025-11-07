@@ -5227,7 +5227,7 @@ cmsInt32Number CheckDictionary16(cmsInt32Number Pass,  cmsHPROFILE hProfile)
              if (memcmp(e ->Value, L"12",  sizeof(wchar_t) * 2) != 0) return 0;
              e = cmsDictNextEntry(e);
              if (memcmp(e ->Name, L"Name", sizeof(wchar_t) * 4) != 0) return 0;
-             if (memcmp(e ->Value, L"String",  sizeof(wchar_t) * 5) != 0) return 0;
+             if (memcmp(e ->Value, L"String",  sizeof(wchar_t) * 6) != 0) return 0;
              e = cmsDictNextEntry(e);
              if (memcmp(e ->Name, L"Name1", sizeof(wchar_t) *5) != 0) return 0;
              if (e ->Value == NULL) return 0;
@@ -5284,7 +5284,7 @@ cmsInt32Number CheckDictionary24(cmsInt32Number Pass,  cmsHPROFILE hProfile)
         if (memcmp(e ->Value, L"12",  sizeof(wchar_t) * 2) != 0) return 0;
         e = cmsDictNextEntry(e);
         if (memcmp(e ->Name, L"Name", sizeof(wchar_t) * 4) != 0) return 0;
-        if (memcmp(e ->Value, L"String",  sizeof(wchar_t) * 5) != 0) return 0;
+        if (memcmp(e ->Value, L"String",  sizeof(wchar_t) * 6) != 0) return 0;
 
         cmsMLUgetASCII(e->DisplayName, "en", "US", Buffer, 256);
         if (strcmp(Buffer, "Hello, world") != 0) rc = 0;
@@ -8492,6 +8492,41 @@ int Check_sRGB_Rountrips(void)
     return 1;
 }
 
+
+static
+int CheckCenteringOfLab(void)
+{
+    cmsHPROFILE hProPhoto = cmsOpenProfileFromFile("test4.icc", "r");
+    cmsHPROFILE hLab = cmsCreateLab4Profile(NULL);
+
+    cmsHTRANSFORM xform1 = cmsCreateTransform(hProPhoto, TYPE_BGR_16, hLab, TYPE_Lab_16, INTENT_RELATIVE_COLORIMETRIC, cmsFLAGS_HIGHRESPRECALC);
+    cmsHTRANSFORM xform2 = cmsCreateTransform(hLab, TYPE_Lab_16, hProPhoto, TYPE_BGR_16, INTENT_RELATIVE_COLORIMETRIC, cmsFLAGS_HIGHRESPRECALC);
+
+    cmsUInt16Number bgr[3] = { 0xffff, 0xffff, 0xffff };
+    cmsUInt16Number bgr2[3];
+    cmsUInt16Number lab[3];
+
+    cmsDoTransform(xform1, bgr, lab, 1);
+    cmsDoTransform(xform2, lab, bgr2, 1);
+
+    if ((0xffff - bgr2[0]) > 5 ||
+        (0xffff - bgr2[1]) > 5 ||
+        (0xffff - bgr2[2]) > 5)
+    {
+        printf("Centering of Lab16 failed. Got %x %x %x\n", bgr2[0], bgr2[1], bgr2[2]);
+        return 0;
+    }
+
+
+    cmsCloseProfile(hLab);
+    cmsCloseProfile(hProPhoto);
+    cmsDeleteTransform(xform1);
+    cmsDeleteTransform(xform2);
+
+    return 1;
+}
+
+
 /**
 * Check OKLab colorspace
 */
@@ -8823,9 +8858,45 @@ int CheckSaveLinearizationDevicelink(void)
     remove("lin_rgb.icc");
 
     return 1;
+}
 
+static
+int CheckGamutCheckFloats(void)
+{
 
+    cmsUInt16Number alarms[16] = { 0x0f0f,3,4,5,6,7,8,9,10 };
+    
 
+    cmsHPROFILE hLab = cmsCreateLab4Profile(NULL);
+    cmsHPROFILE hNull = cmsCreateNULLProfile();
+    cmsHPROFILE hsRGB = cmsCreate_sRGBProfile();
+
+    cmsHTRANSFORM xfrm = cmsCreateProofingTransform(hLab,
+        TYPE_Lab_DBL, hNull, TYPE_GRAY_8, hsRGB,
+        INTENT_RELATIVE_COLORIMETRIC, INTENT_ABSOLUTE_COLORIMETRIC,
+        cmsFLAGS_GAMUTCHECK);
+
+    cmsCloseProfile(hLab);
+    cmsCloseProfile(hNull);
+    cmsCloseProfile(hsRGB);
+
+    cmsCIELab Lab = { 50, -125, 125 };
+    cmsCIELab Lab2 = { 50, -10, 12 };
+
+    cmsUInt8Number gamut;
+
+    cmsSetAlarmCodes(alarms);
+
+    cmsDoTransform(xfrm, &Lab, &gamut, 1);  // Gives the alarm != 0
+    if (gamut != 0x0f)
+        Fail("Gamut check not good");
+
+    cmsDoTransform(xfrm, &Lab2, &gamut, 1);
+    if (gamut != 0)
+        Fail("Gamut check zero");
+
+    cmsDeleteTransform(xfrm);
+    return 1;
 }
 
 
@@ -9558,7 +9629,7 @@ int main(int argc, char* argv[])
     printf("Installing error logger ... ");
     cmsSetLogErrorHandler(FatalErrorQuit);
     printf("done.\n");
-       
+        
     PrintSupportedIntents();
 
     Check("Base types", CheckBaseTypes);
@@ -9767,11 +9838,13 @@ int main(int argc, char* argv[])
     Check("sRGB round-trips", Check_sRGB_Rountrips);
     Check("OkLab color space", Check_OkLab);
     Check("OkLab color space (2)", Check_OkLab2);
+    Check("centering of Lab16", CheckCenteringOfLab);
     Check("Gamma space detection", CheckGammaSpaceDetection);
     Check("Unbounded mode w/ integer output", CheckIntToFloatTransform);
     Check("Corrupted built-in by using cmsWriteRawTag", CheckInducedCorruption);
     Check("Bad CGATS file", CheckBadCGATS);
     Check("Saving linearization devicelink", CheckSaveLinearizationDevicelink);
+    Check("Gamut check on floats", CheckGamutCheckFloats);
     }
 
     if (DoPluginTests)
@@ -9791,7 +9864,7 @@ int main(int argc, char* argv[])
         Check("Rendering intent plugin", CheckIntentPlugin);
         Check("Full transform plugin",   CheckTransformPlugin);
         Check("Mutex plugin",            CheckMutexPlugin);
-       
+        Check("Double from float",       CheckMethodPackDoublesFromFloat);       
     }
 
 

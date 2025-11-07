@@ -6,11 +6,11 @@ testcms_srcs = files(
 
 # copy all iccs to the build dir and run the tests there
 iccs = [
-  'bad.icc', 'crayons.icc', 'new.icc', 'test2.icc', 'test4.icc', 'TestCLT.icc',
+  'bad.icc', 'crayons.icc', 'new.icc', 'test2.icc', 'test4.icc', 
   'bad_mpe.icc', 'ibm-t61.icc', 'test1.icc', 'test3.icc', 'test5.icc',
   'toosmall.icc'
 ]
-fs=import('fs')
+# fs=import('fs') - requires Meson >=0.53.0
 foreach icc : iccs
   # fs.copyfile(icc) # DOES NOT WORK ON FEDORA 40
   configure_file(input : icc,  output : icc, copy : true)

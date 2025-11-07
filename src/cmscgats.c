@@ -266,7 +266,7 @@ typedef struct {
         WRITEMODE as;      // How is supposed to be written
     } PROPERTY;
 
-static PROPERTY PredefinedProperties[] = {
+static const PROPERTY PredefinedProperties[] = {
 
         {"NUMBER_OF_FIELDS", WRITE_UNCOOKED},    // Required - NUMBER OF FIELDS
         {"NUMBER_OF_SETS",   WRITE_UNCOOKED},    // Required - NUMBER OF SETS
@@ -429,7 +429,7 @@ cmsBool StringAppend(string* s, char c)
         new_ptr = (char*) AllocChunk(s->it8, s->max);
         if (new_ptr == NULL) return FALSE;
 
-        if (new_ptr != NULL && s->begin != NULL)
+        if (s->begin != NULL)
             memcpy(new_ptr, s->begin, s->len);
 
         s->begin = new_ptr;
@@ -870,6 +870,11 @@ void InSymbol(cmsIT8* it8)
                     sign = -1;
                     NextCh(it8);
                 }
+                else
+                    if (it8->ch == '+') {
+                        sign = +1;
+                        NextCh(it8);
+                    }
 
                 it8->inum = 0;
                 it8->sy   = SINUM;
