@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------------
 //
 //  Little Color Management System
-//  Copyright (c) 1998-2024 Marti Maria Saguer
+//  Copyright (c) 1998-2026 Marti Maria Saguer
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the "Software"),
@@ -8914,7 +8914,7 @@ int CheckMixedRawAndCooked(void)
         _cmsTagBase base;
         cmsUInt32Number data;
 
-    } buffer = { { (cmsTagTypeSignature) cmsSigTechnologyTag, 0 }, cmsSigFilmScanner };
+    } buffer = { { (cmsTagTypeSignature) cmsSigTechnologyTag, {0} }, cmsSigFilmScanner };
 
     cmsHPROFILE hProfile = cmsCreateProfilePlaceholder(0);   
     cmsWriteRawTag(hProfile, cmsSigTechnologyTag, &buffer, sizeof buffer);
